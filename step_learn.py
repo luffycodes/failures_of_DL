@@ -89,7 +89,7 @@ class GeneralFloorLearn():
         fd = {X_placeholder: X, Y_placeholder: Y, Z_placeholder: Z}
         self.update_additional_placeholders(additional_placeholders, X, p, Y)
         fd.update(dict(additional_placeholders.values()))
-        fd = {k: v for k, v in fd.iteritems() if v is not None}
+        fd = {k: v for k, v in fd.items() if v is not None}
         return p, Y, fd
 
     def train_me(self):
@@ -132,7 +132,7 @@ class IsotronFloorLearn(GeneralFloorLearn):
         return 5000
 
     def get_y(self, p1, Z_placeholder, additional_placeholders):
-        p1_tile = tf.tile(p1, tf.pack([1, len(self._Z)]))
+        p1_tile = tf.tile(p1, tf.stack([1, len(self._Z)]))
         geq_Z = tf.cast(p1_tile >= Z_placeholder, tf.float32)
         geq_Z_0 = tf.slice(geq_Z, [0, 0], [-1, len(self._Z) - 1])
         geq_Z_1 = tf.slice(geq_Z, [0, 1], [-1, len(self._Z) - 1])
@@ -167,7 +167,7 @@ class DifferentiableApproximationFloorLearn(GeneralFloorLearn):
         return p1
 
     def get_y(self, p1, Z_placeholder, additional_placeholders):
-        p1_tile = tf.tile(p1, tf.pack([1, len(self._Z) - 1]))
+        p1_tile = tf.tile(p1, tf.stack([1, len(self._Z) - 1]))
 
         first_Z = tf.slice(Z_placeholder, [0, 0], [-1, 1])
         slice_Z_0 = tf.slice(Z_placeholder, [0, 0], [-1, len(self._Z) - 1])
