@@ -60,7 +60,7 @@ def run_training(args):
         train_op = optimizer.minimize(loss)
 
         session.run(tf.initialize_all_variables())
-        for step in xrange(args.num_iters):
+        for step in range(args.num_iters):
             X, Z, Y = get_batch(args.batch_size, all_X, all_sup_Nary_Y, all_sup_Y, args.d, args.k)
             _ = session.run(train_op, feed_dict={X_placeholder: X,
                                                  Z_placeholder: Z,
