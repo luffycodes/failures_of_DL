@@ -16,13 +16,14 @@ BATCH_SIZE = 256
 PRINT_FREQUENCY = 200
 L = 10.0
 
+
 def sort_by_p(X, p): return [_[0] for _ in sorted(zip(X, p), key=lambda x: x[1])]
 
 
-def my_floor(p, Z, Z2):
+def my_floor(p, Z):
     Y = np.zeros_like(p)
     for i in range(len(p)):
-        Y[i] = - np.max(Z - 9999999.0 * ((p[i] < Z).astype(np.float32))) + np.max(Z2 - 9999999.0 * ((p[i] < Z2).astype(np.float32)))
+        Y[i] = np.max(Z - 9999999.0 * ((p[i] < Z).astype(np.float32)))
     return Y[:, np.newaxis]
 
 
@@ -42,8 +43,8 @@ def Affine(name_scope, input_tensor, out_channels, relu=False):
 
 
 class GeneralFloorLearn():
-    def __init__(self, W_star, b_star, Z, Z2):
-        self._W_star, self._b_star, self._Z, self._Z2 = W_star, b_star, Z, Z2
+    def __init__(self, W_star, b_star, Z):
+        self._W_star, self._b_star, self._Z = W_star, b_star, Z
 
     def my_show(self):
         plt.title(self.__class__.__name__)
@@ -83,7 +84,7 @@ class GeneralFloorLearn():
     def create_data(self, batch_size, X_placeholder, Y_placeholder, Z_placeholder, additional_placeholders):
         X = np.random.randn(batch_size, N) / N
         p = np.dot(X, self._W_star.T) + self._b_star
-        Y = my_floor(p, self._Z, self._Z2)
+        Y = my_floor(p, self._Z)
         Z = np.repeat(self._Z[np.newaxis, :], repeats=X.shape[0], axis=0)
         fd = {X_placeholder: X, Y_placeholder: Y, Z_placeholder: Z}
         self.update_additional_placeholders(additional_placeholders, X, p, Y)
@@ -128,7 +129,7 @@ class IsotronFloorLearn(GeneralFloorLearn):
         return p1
 
     def max_steps(self):
-        return 20000
+        return 5000
 
     def get_y(self, p1, Z_placeholder, additional_placeholders):
         p1_tile = tf.tile(p1, tf.stack([1, len(self._Z)]))
@@ -242,19 +243,14 @@ def main(args):
     Z = np.array(list(set([_ for _ in Z])))
     Z.sort()
 
-    Z2 = b_star + np.concatenate(
-        (np.r_[-98:98:5], np.array([-5.5, -4.5, -3.5, -2.5, -1.5, -0.5, 0, 0.13, 0.17, 0.275, 1.5, 2.5, 3.5, 4.5, 5.5])))
-    Z2 = np.array(list(set([_ for _ in Z2])))
-    Z2.sort()
-
     if args.all or args.non_flat_approximation:
         DifferentiableApproximationFloorLearn(W_star, b_star, Z).train_me()
     if args.all or args.e2e:
-        EndToEndFloorLearn(W_star, b_star, Z, Z2).train_me()
+        EndToEndFloorLearn(W_star, b_star, Z).train_me()
     if args.all or args.mc:
-        MCFloorLearn(W_star, b_star, Z, Z2).train_me()
+        MCFloorLearn(W_star, b_star, Z).train_me()
     if args.all or args.forward_only:
-        IsotronFloorLearn(W_star, b_star, Z, Z2).train_me()
+        IsotronFloorLearn(W_star, b_star, Z).train_me()
 
 
 def get_command_line_args():
