@@ -23,7 +23,13 @@ def sort_by_p(X, p): return [_[0] for _ in sorted(zip(X, p), key=lambda x: x[1])
 def my_floor(p, Z):
     Y = np.zeros_like(p)
     for i in range(len(p)):
-        Y[i] = np.max(Z - 9999999.0 * ((p[i] < Z).astype(np.float32)))
+        for j in range(len(Z)):
+            if p[i] > Z[j]:
+                if j % 2 == 0:
+                    Y[i] = Z[j]
+                else:
+                    Y[i] = - Z[j]
+        # Y[i] = np.max(Z - (9999999.0 * ((p[i] < Z).astype(np.float32))))
     return Y[:, np.newaxis]
 
 
@@ -56,8 +62,8 @@ class GeneralFloorLearn():
         Y = [_[0] for _ in sorted(zip(Y, p), key=lambda x: x[1])]
         y_val = [_[0] for _ in sorted(zip(y_val, p), key=lambda x: x[1])]
         p = sorted(p)
-        plt.plot(p, y_val, 'r');
-        plt.plot(p, Y, 'g--');
+        plt.plot(p, y_val, 'r')
+        plt.plot(p, Y, 'g--')
         self.my_show()
 
     def get_lr(self):
