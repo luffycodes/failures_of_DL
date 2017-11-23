@@ -71,7 +71,7 @@ class GenericTrainer:
     def run_training(self, batch_size, num_examples, num_validation_examples, num_iters, learning_rate):
         self.create_data_for_training(num_examples, num_validation_examples)
         print_interval = num_iters // 10
-        for step in xrange(num_iters):
+        for step in range(num_iters):
             examples = np.random.randint(num_examples, size=batch_size)
             fd = self.create_dict(self._data, examples)
             fd[self._learning_rate] = learning_rate
@@ -90,7 +90,7 @@ class FtoKTrainer(GenericTrainer):
 
         GenericTrainer.__init__(self)
 
-    def create_data(self, m):
+    def create_data(self, m, train=True):
         pstar = np.zeros((m, self._n), dtype=np.float32)
         all_slopes = [[1, -1, 1], [1, -2, 1], [-2, 1, -1], [1, -1, 2]]
         for i in range(m):
@@ -103,6 +103,9 @@ class FtoKTrainer(GenericTrainer):
                 s = s + a[j]
             pstar[i, thetas] = a
         f = np.dot(pstar, self._W)
+        if train:
+            for x in np.nditer(f, op_flags=['readwrite']):
+                x[...] = x + np.random.randn()/10
         return {'X': f, 'Y': pstar}
 
     def create_network(self):
@@ -148,7 +151,7 @@ class FtoKConvTrainer(FtoKTrainer):
         self._F_matrix_col1 = tf.slice(self._X_placeholder, [0, 1], [-1, self._n - 2])
         self._F_matrix_col2 = tf.slice(self._X_placeholder, [0, 0], [-1, self._n - 2])
         self._F_matrix = tf.reshape(
-            tf.pack([self._F_matrix_col0, self._F_matrix_col1, self._F_matrix_col2], axis=2), [-1, 3])
+            tf.stack([self._F_matrix_col0, self._F_matrix_col1, self._F_matrix_col2], axis=2), [-1, 3])
         self._weights = tf.Variable(tf.zeros([3, 1]), name='weights')
         self._valid_p = tf.reshape(tf.matmul(self._F_matrix, self._weights), [-1, self._n - 2])
         self._p = tf.pad(self._valid_p, [[0, 0], [2, 0]], "CONSTANT")
@@ -195,7 +198,7 @@ class FtoKConvCondTrainer(FtoKConvTrainer):
         self._F_matrix_col1 = tf.slice(self._X_placeholder, [0, 1], [-1, self._n - 2])
         self._F_matrix_col2 = tf.slice(self._X_placeholder, [0, 0], [-1, self._n - 2])
         self._F_matrix = tf.reshape(
-            tf.pack([self._F_matrix_col0, self._F_matrix_col1, self._F_matrix_col2], axis=2), [-1, 3])
+            tf.stack([self._F_matrix_col0, self._F_matrix_col1, self._F_matrix_col2], axis=2), [-1, 3])
         self._conditioner = tf.placeholder(tf.float32, shape=(3, 3))
         self._Cond_F_matrix = tf.matmul(self._F_matrix, self._conditioner)
         self._weights = tf.Variable(tf.zeros([3, 1]), name='weights')
