@@ -1,12 +1,14 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-import math
-import sys
-import tensorflow as tf
-import numpy as np
+
 import argparse
-import os
+import math
+
+import numpy as np
+import tensorflow as tf
+
+result_dir = './results_d30/'
 
 
 def Affine(name_scope, input_tensor, out_channels, relu=True):
@@ -47,19 +49,23 @@ def run_training(args):
         loss = tf.reduce_mean(tf.nn.relu(1.0 - Y_placeholder * score))
 
         accuracy = tf.reduce_mean(tf.cast(Y_placeholder * score > 0, tf.float32))
+        acc = tf.summary.scalar("accuracy", accuracy)
+        summary_writer = tf.summary.FileWriter(result_dir, session.graph)
         optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.01)
         train_op = optimizer.minimize(loss)
 
         session.run(tf.initialize_all_variables())
-        for step in xrange(args.num_iters):
+        for step in range(args.num_iters):
             X, Y = get_batch(args.batch_size, len_subset, args.d)
-            _ = session.run(train_op, feed_dict={X_placeholder: X, Y_placeholder: Y})
+            _, _ = session.run([train_op, acc], feed_dict={X_placeholder: X, Y_placeholder: Y})
             if (step % args.print_freq == 0) or step + 1 == args.num_iters:
                 X, Y = get_batch(500, len_subset, args.d)
                 fd = {X_placeholder: X, Y_placeholder: Y}
-                print('\nIteration %d' % (step))
-                loss_, accuracy_ = session.run([loss, accuracy], feed_dict=fd)
-                print('Iteration %d loss %.4f accuracy %.4f' % (step, loss_, accuracy_))
+                print('\nIteration %d' % step)
+                loss_, accuracy_, accuracy_p = session.run([loss, acc, accuracy], feed_dict=fd)
+                summary_writer.add_summary(accuracy_, step)
+                summary_writer.flush()
+                print('Iteration %d loss %.4f accuracy %.4f' % (step, loss_, accuracy_p))
 
 
 def main(args):
@@ -68,8 +74,8 @@ def main(args):
 
 def get_command_line_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--d", default=100, type=int, help='input dimension')
-    parser.add_argument("--num_iters", default=50000, type=int, help='number of iterations')
+    parser.add_argument("--d", default=30, type=int, help='input dimension')
+    parser.add_argument("--num_iters", default=15000, type=int, help='number of iterations')
     parser.add_argument("--print_freq", default=100, type=int, help='print frequency')
     parser.add_argument("--learning_rate", default=0.01, type=float, help='learning rate')
     parser.add_argument("--batch_size", default=128, type=int, help='batch size')
