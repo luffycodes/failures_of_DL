@@ -27,8 +27,10 @@ def my_floor(p, Z):
             if p[i] > Z[j]:
                 if j % 2 == 0:
                     Y[i] = Z[j]
+                    # Y[i] = Z[j] + 0.1 * (Z[j] - p[i])
                 else:
                     Y[i] = - Z[j]
+                    # Y[i] = Z[j] + 0.1 * (Z[j] - p[i])
         # Y[i] = np.max(Z - (9999999.0 * ((p[i] < Z).astype(np.float32))))
     return Y[:, np.newaxis]
 
